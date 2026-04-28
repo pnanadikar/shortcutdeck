@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>shortcutdeck</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <div class="sb-appname">shortcutdeck</div>
+      <div class="sb-section">
+        <div class="sb-section-label">Decks</div>
+        <button class="sb-action active" type="button" id="study-action">Study...</button>
+        <button class="sb-action muted sb-action-group-start" type="button" id="create-action">Create...</button>
+        <button class="sb-action" type="button" id="import-action">Import...</button>
+        <button class="sb-action" type="button" id="export-action">Export...</button>
+      </div>
+      <hr class="sb-divider">
+      <button class="sb-action destructive" type="button" id="delete-action">Delete...</button>
+      <hr class="sb-divider">
+      <button class="sb-action muted" type="button" disabled>Settings...</button>
+      <button class="sb-action" type="button" id="about-action">About...</button>
+      <div class="sb-bottom">
+        <div class="sb-stat" id="stat-decks"><span>0</span> decks</div>
+        <div class="sb-stat" id="stat-cards"><span>0</span> shortcuts</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <button class="bc" id="bc-home" type="button" tabindex="-1">All decks</button>
+        <span class="bc-sep hidden" id="bc-sep1">›</span>
+        <span class="bc hidden" id="bc-deck"></span>
+        <span class="bc-sep hidden" id="bc-sep2">›</span>
+        <span class="bc active" id="bc-tail">Create deck</span>
+      </div>
+
+      <div class="content">
+        <section id="view-study" class="view view-study hidden">
+          <div class="study-home">
+            <div class="study-toolbar">
+              <label class="study-search" for="study-search">
+                <span class="study-search-label">Search decks</span>
+                <input id="study-search" type="search" placeholder="Search decks..." autocomplete="off">
+              </label>
+            </div>
+            <div class="study-list" id="study-list"></div>
+          </div>
+        </section>
+
+        <section id="view-session" class="view view-session hidden">
+          <div class="session-shell">
+            <div class="session-topbar">
+              <button class="dmi-back" type="button" id="session-back-btn">← Back</button>
+              <span class="dmi-back-sep"></span>
+              <div class="session-context">
+                <div class="session-title" id="session-title">Quick Refresher</div>
+                <div class="session-subtitle" id="session-subtitle"></div>
+              </div>
+            </div>
+            <div class="session-body">
+              <div class="session-card-wrap">
+                <div class="progress-row">
+                  <div class="progress-bar"><div class="progress-fill" id="session-progress-fill"></div></div>
+                  <span class="progress-text" id="session-progress-text"></span>
+                </div>
+                <div class="session-card-face" id="session-card-face" tabindex="-1">
+                  <span class="session-card-label" id="session-card-label"></span>
+                  <span class="session-card-value" id="session-card-value"></span>
+                  <span class="session-card-tag hidden" id="session-card-tag"></span>
+                  <span class="session-card-answer hidden" id="session-card-answer"></span>
+                  <span class="session-card-notes hidden" id="session-card-notes"></span>
+                </div>
+                <div class="session-reveal-hint" id="session-reveal-hint">
+                  <span class="kbd">Space</span>
+                  <span class="hint-text">to reveal answer</span>
+                </div>
+                <div class="session-answer-actions hidden" id="session-answer-actions">
+                  <div class="session-effort-row">
+                    <input class="session-effort-check" id="session-effort-check" type="checkbox">
+                    <label class="session-effort-label" for="session-effort-check">Needed effort</label>
+                  </div>
+                  <div class="session-grade-row">
+                    <button class="session-grade-btn session-grade-missed" type="button" id="session-missed-btn">Missed it</button>
+                    <button class="session-grade-btn session-grade-gotit" type="button" id="session-gotit-btn">Got it</button>
+                  </div>
+                </div>
+                <div class="session-nav-row hidden" id="session-nav-row">
+                  <button class="btn" type="button" id="session-prev-btn">← Prev</button>
+                  <span class="session-nav-pos" id="session-nav-pos"></span>
+                  <button class="btn" type="button" id="session-next-btn">Next →</button>
+                </div>
+              </div>
+            </div>
+            <div class="session-summary hidden" id="session-summary">
+              <div class="summary-card">
+                <div class="summary-header">
+                  <div class="summary-title" id="summary-title">Done for today</div>
+                  <div class="summary-subtitle" id="summary-subtitle"></div>
+                </div>
+                <div class="summary-stats">
+                  <div class="stat-box">
+                    <div class="stat-label">Reviewed</div>
+                    <div class="stat-value" id="summary-reviewed">0</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-label">Got it</div>
+                    <div class="stat-value gotit" id="summary-gotit">0</div>
+                  </div>
+                  <div class="stat-box">
+                    <div class="stat-label">Missed it</div>
+                    <div class="stat-value missed" id="summary-missed">0</div>
+                  </div>
+                </div>
+                <hr class="summary-divider">
+                <div class="next-due">
+                  <div class="next-due-label">Coming up</div>
+                  <div class="next-due-rows" id="summary-next-due"></div>
+                </div>
+                <div class="summary-actions">
+                  <button class="btn btn-danger" type="button" id="summary-exit-review-btn">Exit Review</button>
+                  <span class="btn-spacer"></span>
+                  <button class="btn" type="button" id="summary-back-btn">Back to decks</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-decks" class="view view-decks">
+          <div class="form-panel">
+            <div class="form-section-label">Deck metadata</div>
+            <div class="field">
+              <label for="d-name">Name <span class="req">*</span></label>
+              <input id="d-name" type="text" placeholder="e.g. Vim, Finder, tmux" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="d-desc">Description</label>
+              <textarea id="d-desc" rows="2" placeholder="Optional context..."></textarea>
+            </div>
+            <div class="field">
+              <label for="d-mode">Card presentation mode <span class="req">*</span></label>
+              <select id="d-mode">
+                <option value="prompt_first">Prompt first (default)</option>
+                <option value="answer_first">Answer first</option>
+                <option value="both">Both (show each card twice)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tag namespaces <span class="field-note">(optional)</span></label>
+              <div class="ns-editor" id="d-ns-editor"></div>
+              <button class="ns-add" type="button" id="add-namespace-btn">+ Add namespace</button>
+              <div class="ns-hint">e.g. mode → normal, insert, visual</div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="button" id="d-submit">Add deck</button>
+              <button class="btn btn-ghost" type="button" id="d-clear">Clear</button>
+            </div>
+          </div>
+          <div class="list-panel">
+            <div class="list-header">Decks</div>
+            <div class="deck-list" id="deck-list"></div>
+          </div>
+        </section>
+
+        <section id="view-cards" class="view card-editor hidden">
+          <div class="deck-meta-bar" id="deck-meta-bar"></div>
+          <div class="card-editor-body">
+            <div class="form-panel">
+              <div class="form-section-label">Card</div>
+              <div class="field">
+                <label for="c-prompt">Prompt <span class="req">*</span></label>
+                <input id="c-prompt" type="text" placeholder="What the shortcut does" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="c-answer">Answer <span class="req">*</span></label>
+                <input id="c-answer" class="mono-input" type="text" placeholder="Key combination, e.g. gg" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="c-notes">Notes</label>
+                <textarea id="c-notes" rows="2" placeholder="Optional context..."></textarea>
+              </div>
+              <div class="field">
+                <label>Tags</label>
+                <div class="tag-input-wrap" id="tag-input-wrap">
+                  <input id="c-tag-input" class="tag-bare-input" type="text" placeholder="Type tag, press Enter" autocomplete="off">
+                </div>
+                <div class="tag-hint-wrap" id="tag-hint-wrap"></div>
+              </div>
+              <div class="source-row">
+                <span class="source-label">Source:</span>
+                <span class="source-badge" id="c-source-badge">manual</span>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary" type="button" id="c-submit">Add card</button>
+                <button class="btn btn-ghost" type="button" id="c-clear">Clear</button>
+                <button class="btn btn-danger hidden" type="button" id="c-delete">Delete card</button>
+                <button class="btn" type="button" id="export-btn">Export deck</button>
+              </div>
+            </div>
+            <div class="list-panel">
+              <div class="list-header" id="card-list-header">Cards</div>
+              <div class="card-list" id="card-list"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="statusbar">
+        <span class="status-msg" id="status-msg">Fill in the essential details to create an empty deck</span>
+        <span class="toast hidden" id="toast"></span>
+      </div>
+    </main>
+  </div>
+
+  <div class="overlay hidden" id="about-overlay" aria-hidden="true">
+    <div class="about-dialog" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <div class="about-dialog-header">
+        <div>
+          <div class="about-kicker">About</div>
+          <h2 class="about-title" id="about-title">shortcutdeck</h2>
+        </div>
+        <button class="about-close" type="button" id="about-close-btn" aria-label="Close About dialog">×</button>
+      </div>
+      <div class="about-version" id="about-version">Version dev</div>
+      <p class="about-copy" id="about-description">A desktop-first, keyboard-first flashcard tool for learning keyboard shortcuts without dashboard clutter.</p>
+      <div class="about-actions">
+        <button class="btn" type="button" id="about-dismiss-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <input id="import-file" type="file" accept="application/json,.json" hidden>
+
+  <script>window.__SHORTCUTDECK__ = __APP_INFO_JSON__;</script>
+  <script src="/app.js"></script>
+</body>
+</html>

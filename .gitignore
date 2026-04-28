@@ -1,0 +1,48 @@
+# Binaries
+/shortcuts
+/shortcutdeck
+
+*.exe
+*.out
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build cache
+bin/
+dist/
+.cache/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Logs
+*.log
+
+# VS Code
+.vscode/*.log
+.vscode/*.tmp
+
+# Editor indexes
+tags
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go test output
+*.test
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Coverage
+coverage.out
+
+# Local env files
+.env
+
+# Node / ESLint
+node_modules/

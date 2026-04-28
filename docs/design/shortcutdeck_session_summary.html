@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>shortcutdeck — session summary</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --color-background-primary: #ffffff;
+  --color-background-secondary: #f5f5f4;
+  --color-background-tertiary: #eeece8;
+  --color-background-danger: #fef2f2;
+  --color-text-primary: #1a1a18;
+  --color-text-secondary: #57574f;
+  --color-text-tertiary: #9b9b92;
+  --color-text-danger: #b91c1c;
+  --color-border-tertiary: rgba(0,0,0,0.1);
+  --color-border-secondary: rgba(0,0,0,0.18);
+  --color-border-primary: rgba(0,0,0,0.28);
+  --font-sans: system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, monospace;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background-primary: #1c1c1a;
+    --color-background-secondary: #252523;
+    --color-background-tertiary: #2e2e2b;
+    --color-background-danger: #2d1515;
+    --color-text-primary: #f0ede8;
+    --color-text-secondary: #a8a89e;
+    --color-text-tertiary: #6b6b63;
+    --color-text-danger: #f87171;
+    --color-border-tertiary: rgba(255,255,255,0.1);
+    --color-border-secondary: rgba(255,255,255,0.18);
+    --color-border-primary: rgba(255,255,255,0.28);
+  }
+}
+
+body { background: var(--color-background-tertiary); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; font-family: var(--font-sans); }
+
+.shell { display: flex; height: 560px; width: 100%; max-width: 860px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; background: var(--color-background-primary); font-size: 13px; }
+
+.sidebar { width: 160px; flex-shrink: 0; border-right: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); display: flex; flex-direction: column; }
+.sb-appname { padding: 16px 14px 14px; font-size: 13px; font-weight: 500; color: var(--color-text-primary); border-bottom: 0.5px solid var(--color-border-tertiary); }
+.sb-section { padding: 12px 0 4px; }
+.sb-section-label { padding: 0 14px 4px; font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); letter-spacing: 0.06em; text-transform: uppercase; }
+.sb-divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 8px 0; }
+.sb-action { padding: 6px 14px; color: var(--color-text-secondary); cursor: pointer; font-size: 13px; }
+.sb-action:hover { background: var(--color-background-primary); color: var(--color-text-primary); }
+.sb-action.destructive { color: var(--color-text-danger); }
+.sb-action.destructive:hover { background: var(--color-background-danger); }
+.sb-action.muted { color: var(--color-text-tertiary); }
+.sb-bottom { margin-top: auto; border-top: 0.5px solid var(--color-border-tertiary); padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; }
+.sb-stat { font-size: 11px; color: var(--color-text-tertiary); }
+.sb-stat span { color: var(--color-text-secondary); font-weight: 500; }
+
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.topbar { height: 46px; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; padding: 0 20px; flex-shrink: 0; gap: 6px; }
+.bc { font-size: 13px; color: var(--color-text-tertiary); }
+.bc.active { color: var(--color-text-primary); font-weight: 500; }
+.bc-sep { font-size: 13px; color: var(--color-text-tertiary); }
+
+.content { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+
+.summary-card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 24px; }
+
+.summary-header { display: flex; flex-direction: column; gap: 4px; }
+.summary-title { font-size: 18px; font-weight: 500; color: var(--color-text-primary); }
+.summary-subtitle { font-size: 13px; color: var(--color-text-tertiary); }
+
+.summary-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stat-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.stat-label { font-size: 11px; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+.stat-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+.stat-value.gotit { color: #085041; }
+.stat-value.missed { color: #A32D2D; }
+
+.summary-divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); }
+
+.next-due { display: flex; flex-direction: column; gap: 8px; }
+.next-due-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+.next-due-rows { display: flex; flex-direction: column; }
+.next-due-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.next-due-row:last-child { border-bottom: none; }
+.next-due-when { font-size: 13px; color: var(--color-text-primary); }
+.next-due-count { font-size: 13px; color: var(--color-text-secondary); }
+
+.summary-actions { display: flex; gap: 8px; align-items: center; padding-top: 4px; }
+.btn { font-size: 12px; padding: 6px 14px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-primary); color: var(--color-text-primary); cursor: pointer; font-family: var(--font-sans); font-weight: 500; }
+.btn:hover { background: var(--color-background-secondary); }
+.btn-exit { color: var(--color-text-danger); border-color: var(--color-border-tertiary); }
+.btn-exit:hover { background: var(--color-background-danger); }
+.btn-spacer { flex: 1; }
+
+.statusbar { height: 26px; border-top: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; padding: 0 20px; flex-shrink: 0; }
+.status-msg { font-size: 11px; color: var(--color-text-tertiary); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar">
+    <div class="sb-appname">shortcutdeck</div>
+    <div class="sb-section">
+      <div class="sb-section-label">Decks</div>
+      <div class="sb-action active">Study…</div>
+      <div class="sb-action" style="margin-top:6px;">Create…</div>
+      <div class="sb-action">Import…</div>
+    </div>
+    <hr class="sb-divider">
+    <div class="sb-action destructive">Delete…</div>
+    <hr class="sb-divider">
+    <div class="sb-action muted">Settings…</div>
+    <div class="sb-action muted">About…</div>
+    <div class="sb-bottom">
+      <div class="sb-stat"><span>5</span> decks</div>
+      <div class="sb-stat"><span>233</span> shortcuts</div>
+      <div class="sb-stat" style="color:#A32D2D; font-weight:500;">5 due today</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="bc">All decks</span>
+      <span class="bc-sep">›</span>
+      <span class="bc">Vim · Ongoing Review</span>
+      <span class="bc-sep">›</span>
+      <span class="bc active">Session summary</span>
+    </div>
+
+    <div class="content">
+      <div class="summary-card">
+
+        <div class="summary-header">
+          <div class="summary-title">Done for today</div>
+          <div class="summary-subtitle">Vim · Ongoing Review</div>
+        </div>
+
+        <div class="summary-stats">
+          <div class="stat-box">
+            <div class="stat-label">Reviewed</div>
+            <div class="stat-value">12</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Got it</div>
+            <div class="stat-value gotit">9</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Missed it</div>
+            <div class="stat-value missed">3</div>
+          </div>
+        </div>
+
+        <hr class="summary-divider">
+
+        <div class="next-due">
+          <div class="next-due-label">Coming up</div>
+          <div class="next-due-rows">
+            <div class="next-due-row">
+              <span class="next-due-when">Tomorrow</span>
+              <span class="next-due-count">3 cards</span>
+            </div>
+            <div class="next-due-row">
+              <span class="next-due-when">In 3 days</span>
+              <span class="next-due-count">5 cards</span>
+            </div>
+            <div class="next-due-row">
+              <span class="next-due-when">In 7 days</span>
+              <span class="next-due-count">4 cards</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary-actions">
+          <button class="btn btn-exit">Exit Review</button>
+          <span class="btn-spacer"></span>
+          <button class="btn">Back to decks</button>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="statusbar">
+      <span class="status-msg">Session complete · Enter to return to decks · tmux still has 5 due today</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

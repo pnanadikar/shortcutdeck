@@ -1,0 +1,11 @@
+{
+  "eslint.useFlatConfig": true,
+  "eslint.validate": [
+    "javascript"
+  ],
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ]
+}

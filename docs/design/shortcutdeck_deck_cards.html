@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>shortcutdeck — deck &amp; card management</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-background-primary:#ffffff;--color-background-secondary:#f5f5f4;
+  --color-background-tertiary:#eeece8;--color-background-danger:#fef2f2;
+  --color-text-primary:#1a1a18;--color-text-secondary:#57574f;
+  --color-text-tertiary:#9b9b92;--color-text-danger:#b91c1c;
+  --color-border-tertiary:rgba(0,0,0,0.1);--color-border-secondary:rgba(0,0,0,0.18);
+  --color-border-primary:rgba(0,0,0,0.28);
+  --blue-3:#eaf3ff;--blue-7:#b7d4f7;--blue-11:#0f5ea6;--blue-12:#0b4a84;
+  --color-primary-soft:var(--blue-3);--color-primary-border:var(--blue-7);--color-primary-text:var(--blue-12);
+  --font-sans:system-ui,-apple-system,sans-serif;--font-mono:ui-monospace,monospace;
+  --border-radius-md:8px;--border-radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --color-background-primary:#1c1c1a;--color-background-secondary:#252523;
+  --color-background-tertiary:#2e2e2b;--color-background-danger:#2d1515;
+  --color-text-primary:#f0ede8;--color-text-secondary:#a8a89e;
+  --color-text-tertiary:#6b6b63;--color-text-danger:#f87171;
+  --color-border-tertiary:rgba(255,255,255,0.1);--color-border-secondary:rgba(255,255,255,0.18);
+  --color-border-primary:rgba(255,255,255,0.28);
+  --blue-3:#0d2847;--blue-7:#225f97;--blue-11:#8fc2ff;--blue-12:#cfe7ff;
+  --color-primary-soft:var(--blue-3);--color-primary-border:var(--blue-7);--color-primary-text:var(--blue-12);
+}}
+body{background:var(--color-background-tertiary);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;font-family:var(--font-sans);}
+.shell{display:flex;height:700px;width:100%;max-width:920px;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;background:var(--color-background-primary);font-size:13px;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:160px;flex-shrink:0;border-right:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);display:flex;flex-direction:column;}
+.sb-appname{padding:16px 14px 14px;font-size:13px;font-weight:500;color:var(--color-text-primary);border-bottom:0.5px solid var(--color-border-tertiary);}
+.sb-section{padding:12px 0 4px;}
+.sb-section-label{padding:0 14px 4px;font-size:11px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:0.06em;text-transform:uppercase;}
+.sb-divider{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:8px 0;}
+.sb-action{padding:6px 14px;color:var(--color-text-secondary);cursor:pointer;font-size:13px;}
+.sb-action:hover{background:var(--color-background-primary);color:var(--color-text-primary);}
+.sb-action.active{background:var(--color-background-primary);color:var(--color-text-primary);font-weight:500;}
+.sb-action.destructive{color:var(--color-text-danger);}
+.sb-action.destructive:hover{background:var(--color-background-danger);}
+.sb-action.muted{color:var(--color-text-tertiary);}
+.sb-bottom{margin-top:auto;border-top:0.5px solid var(--color-border-tertiary);padding:10px 14px;display:flex;flex-direction:column;gap:3px;}
+.sb-stat{font-size:11px;color:var(--color-text-tertiary);}
+.sb-stat span{color:var(--color-text-secondary);font-weight:500;}
+
+/* ── MAIN CHROME ── */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{height:46px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;padding:0 20px;flex-shrink:0;gap:6px;}
+.bc{font-size:13px;color:var(--color-text-tertiary);cursor:pointer;}
+.bc:hover{color:var(--color-text-secondary);}
+.bc.active{color:var(--color-text-primary);font-weight:500;cursor:default;}
+.bc-sep{font-size:13px;color:var(--color-text-tertiary);}
+.content{flex:1;display:flex;flex-direction:row;min-height:0;overflow:hidden;}
+.statusbar{height:26px;border-top:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;padding:0 20px;flex-shrink:0;gap:8px;}
+.status-msg{font-size:11px;color:var(--color-text-tertiary);}
+.toast{font-size:11px;padding:2px 10px;border-radius:8px;background:#EAF3DE;color:#3B6D11;border:0.5px solid #C0DD97;transition:opacity 0.3s;}
+.toast.hidden{opacity:0;pointer-events:none;}
+.toast.error{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1;}
+
+/* ── SHARED FORM STYLES ── */
+.form-panel{width:296px;flex-shrink:0;border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;padding:14px;gap:10px;overflow-y:auto;}
+.form-section-label{font-size:11px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:0.06em;text-transform:uppercase;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:12px;color:var(--color-text-secondary);}
+.field label .req{color:#A32D2D;}
+.field input,.field textarea,.field select{font-size:13px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:6px 10px;outline:none;width:100%;resize:none;}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,0.15);}
+.field input::placeholder,.field textarea::placeholder{color:var(--color-text-tertiary);}
+.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239b9b92' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
+.form-actions{display:flex;gap:8px;padding-top:2px;margin-top:auto;}
+.btn{font-size:12px;padding:6px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer;font-family:var(--font-sans);font-weight:500;white-space:nowrap;}
+.btn:hover{background:var(--color-background-secondary);}
+.btn-primary{background:#185FA5;color:#E6F1FB;border-color:transparent;}
+.btn-primary:hover{background:#0C447C;}
+.btn-ghost{color:var(--color-text-secondary);border-color:transparent;}
+.btn-ghost:hover{background:var(--color-background-secondary);color:var(--color-text-primary);}
+
+/* ── NAMESPACE EDITOR ── */
+.ns-editor{display:flex;flex-direction:column;gap:5px;}
+.ns-row{display:flex;align-items:center;gap:5px;}
+.ns-row input{font-size:12px;font-family:var(--font-sans);color:var(--color-text-primary);background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:5px 8px;outline:none;}
+.ns-row input:focus{border-color:#378ADD;}
+.ns-row input::placeholder{color:var(--color-text-tertiary);}
+.ns-sep{font-size:11px;color:var(--color-text-tertiary);flex-shrink:0;}
+.ns-remove{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--color-text-tertiary);font-size:15px;border-radius:4px;flex-shrink:0;line-height:1;}
+.ns-remove:hover{background:var(--color-background-danger);color:var(--color-text-danger);}
+.ns-add{font-size:12px;color:#185FA5;background:none;border:none;cursor:pointer;padding:2px 0;text-align:left;font-family:var(--font-sans);}
+.ns-add:hover{color:#0C447C;}
+.ns-hint{font-size:11px;color:var(--color-text-tertiary);}
+
+/* ── DECK LIST ── */
+.list-panel{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.list-header{padding:13px 16px 11px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:11px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0;}
+.deck-list{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:4px;}
+.deck-row{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;cursor:pointer;}
+.deck-row.selected{border-color:#378ADD;}
+.deck-row-top{display:flex;align-items:center;gap:10px;padding:9px 12px 8px;}
+.deck-row:hover .deck-row-top{background:var(--color-background-secondary);}
+.deck-row.selected .deck-row-top{background:var(--color-background-secondary);}
+.de-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.deck-row-info{flex:1;min-width:0;}
+.deck-row-name{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.deck-row-meta{font-size:11px;color:var(--color-text-tertiary);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.deck-row-mode{font-size:11px;padding:1px 7px;border-radius:8px;background:var(--color-primary-soft);color:var(--color-primary-text);border:0.5px solid var(--color-primary-border);flex-shrink:0;}
+.deck-row-footer{border-top:0.5px solid var(--color-border-tertiary);padding:7px 12px;background:var(--color-background-secondary);display:flex;align-items:center;gap:8px;}
+.btn-edit-cards{font-size:11px;padding:3px 10px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-secondary);cursor:pointer;font-family:var(--font-sans);font-weight:500;}
+.btn-edit-cards:hover{background:var(--color-background-tertiary);color:var(--color-text-primary);}
+.deck-row-count{font-size:11px;color:var(--color-text-tertiary);margin-left:auto;}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:32px;}
+.empty-title{font-size:13px;font-weight:500;color:var(--color-text-secondary);}
+.empty-sub{font-size:12px;color:var(--color-text-tertiary);text-align:center;}
+
+/* ── CARD EDITOR ── */
+.card-editor{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.deck-meta-bar{padding:9px 16px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:baseline;gap:8px;flex-shrink:0;background:var(--color-background-secondary);flex-wrap:wrap;}
+.dmi-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;align-self:center;}
+.dmi-name{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.dmi-sep{font-size:12px;color:var(--color-text-tertiary);}
+.dmi-desc{font-size:12px;color:var(--color-text-tertiary);}
+.dmi-ns{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto;}
+.ns-pill{font-size:11px;padding:1px 7px;border-radius:8px;background:var(--color-primary-soft);color:var(--color-primary-text);border:0.5px solid var(--color-primary-border);}
+.dmi-back{font-size:12px;color:var(--color-text-tertiary);cursor:pointer;display:flex;align-items:center;gap:3px;flex-shrink:0;padding:2px 0;align-self:center;}
+.dmi-back:hover{color:var(--color-text-secondary);}
+.dmi-back-sep{width:1px;height:12px;background:var(--color-border-secondary);flex-shrink:0;align-self:center;}
+.card-editor-body{flex:1;display:flex;flex-direction:row;overflow:hidden;}
+
+/* tag input */
+.tag-input-wrap{display:flex;flex-wrap:wrap;align-items:center;gap:4px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:5px 8px;cursor:text;min-height:34px;}
+.tag-input-wrap:focus-within{border-color:#378ADD;box-shadow:0 0 0 2px rgba(55,138,221,0.15);}
+.tag-chip{font-size:11px;padding:1px 6px 1px 8px;border-radius:8px;background:var(--color-primary-soft);color:var(--color-primary-text);border:0.5px solid var(--color-primary-border);display:flex;align-items:center;gap:3px;}
+.tag-chip-remove{background:none;border:none;cursor:pointer;color:var(--blue-11);font-size:13px;line-height:1;padding:0;display:flex;align-items:center;}
+.tag-chip-remove:hover{color:var(--color-primary-text);}
+.tag-bare-input{border:none;background:transparent;font-size:12px;font-family:var(--font-sans);color:var(--color-text-primary);outline:none;min-width:80px;flex:1;}
+.tag-bare-input::placeholder{color:var(--color-text-tertiary);}
+
+/* tag hint — namespace-grouped */
+.tag-hint-wrap{display:flex;flex-direction:column;gap:2px;margin-top:3px;}
+.tag-hint-row{font-size:11px;color:var(--color-text-tertiary);line-height:1.5;}
+.tag-hint-row b{font-weight:500;color:var(--color-text-secondary);}
+
+.source-row{display:flex;align-items:center;gap:6px;margin-top:2px;}
+.source-badge{font-size:11px;padding:2px 8px;border-radius:8px;background:var(--color-background-secondary);color:var(--color-text-tertiary);border:0.5px solid var(--color-border-tertiary);}
+
+/* card list */
+.card-list{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:3px;}
+.card-row{display:flex;align-items:stretch;border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);overflow:hidden;cursor:pointer;}
+.card-row:hover{border-color:var(--color-border-secondary);}
+.card-row.selected{border-color:#378ADD;}
+.card-row-body{flex:1;padding:8px 10px;min-width:0;}
+.card-row-prompt{font-size:13px;color:var(--color-text-primary);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-row-answer{font-size:12px;font-family:var(--font-mono);color:#185FA5;margin-top:2px;}
+.card-row-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+.card-tag{font-size:11px;padding:1px 6px;border-radius:6px;background:var(--color-primary-soft);color:var(--color-primary-text);border:0.5px solid var(--color-primary-border);}
+.card-row-notes{font-size:11px;color:var(--color-text-tertiary);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar">
+    <div class="sb-appname">shortcutdeck</div>
+    <div class="sb-section">
+      <div class="sb-section-label">Decks</div>
+      <div class="sb-action">Study…</div>
+      <div class="sb-action active" style="margin-top:6px;" onclick="goHome()">Create…</div>
+      <div class="sb-action">Import…</div>
+      <div class="sb-action">Export…</div>
+    </div>
+    <hr class="sb-divider">
+    <div class="sb-action destructive" onclick="deleteDeck()">Delete…</div>
+    <hr class="sb-divider">
+    <div class="sb-action muted">Settings…</div>
+    <div class="sb-action muted">About…</div>
+    <div class="sb-bottom">
+      <div class="sb-stat" id="stat-decks"><span>3</span> decks</div>
+      <div class="sb-stat" id="stat-cards"><span>7</span> shortcuts</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="bc" id="bc-home" onclick="goHome()">All decks</span>
+      <span class="bc-sep" id="bc-sep1" style="display:none">›</span>
+      <span class="bc" id="bc-deck" style="display:none"></span>
+      <span class="bc-sep" id="bc-sep2" style="display:none">›</span>
+      <span class="bc active" id="bc-tail">Create deck</span>
+    </div>
+
+    <div class="content">
+
+      <!-- DECK HOME -->
+      <div id="view-decks" style="flex:1;display:flex;flex-direction:row;overflow:hidden;">
+        <div class="form-panel">
+          <div class="form-section-label">Deck metadata</div>
+          <div class="field">
+            <label for="d-name">Name <span class="req">*</span></label>
+            <input id="d-name" type="text" placeholder="e.g. Vim, Finder, tmux" autocomplete="off"/>
+          </div>
+          <div class="field">
+            <label for="d-desc">Description</label>
+            <textarea id="d-desc" rows="2" placeholder="Optional context…"></textarea>
+          </div>
+          <div class="field">
+            <label for="d-mode">Default reverse mode <span class="req">*</span></label>
+            <select id="d-mode">
+              <option value="prompt_first">Prompt first (default)</option>
+              <option value="answer_first">Answer first</option>
+              <option value="both">Both (show each card twice)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Tag namespaces <span style="font-weight:400;color:var(--color-text-tertiary)">(optional)</span></label>
+            <div class="ns-editor" id="d-ns-editor"></div>
+            <button class="ns-add" onclick="addDeckNsRow()">+ Add namespace</button>
+            <div class="ns-hint">e.g. mode → normal, insert, visual</div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" id="d-submit" onclick="submitDeck()">Add deck</button>
+            <button class="btn btn-ghost" onclick="resetDeckForm()">Clear</button>
+          </div>
+        </div>
+        <div class="list-panel">
+          <div class="list-header">Decks</div>
+          <div class="deck-list" id="deck-list"></div>
+        </div>
+      </div>
+
+      <!-- CARD EDITOR -->
+      <div class="card-editor" id="view-cards" style="display:none;">
+        <div class="deck-meta-bar" id="deck-meta-bar"></div>
+        <div class="card-editor-body">
+          <div class="form-panel">
+            <div class="form-section-label">Card</div>
+            <div class="field">
+              <label for="c-prompt">Prompt <span class="req">*</span></label>
+              <input id="c-prompt" type="text" placeholder="What the shortcut does" autocomplete="off"/>
+            </div>
+            <div class="field">
+              <label for="c-answer">Answer <span class="req">*</span></label>
+              <input id="c-answer" type="text" placeholder="Key combination, e.g. gg" autocomplete="off" style="font-family:var(--font-mono);"/>
+            </div>
+            <div class="field">
+              <label for="c-notes">Notes</label>
+              <textarea id="c-notes" rows="2" placeholder="Optional context…"></textarea>
+            </div>
+            <div class="field">
+              <label>Tags</label>
+              <div class="tag-input-wrap" id="tag-input-wrap" onclick="document.getElementById('c-tag-input').focus()">
+                <input id="c-tag-input" class="tag-bare-input" placeholder="Type tag, press Enter" autocomplete="off"/>
+              </div>
+              <div class="tag-hint-wrap" id="tag-hint-wrap"></div>
+            </div>
+            <div class="source-row">
+              <span style="font-size:12px;color:var(--color-text-tertiary)">Source:</span>
+              <span class="source-badge" id="c-source-badge">manual</span>
+            </div>
+            <div class="form-actions" style="margin-top:auto">
+              <button class="btn btn-primary" id="c-submit" onclick="submitCard()">Add card</button>
+              <button class="btn btn-ghost" onclick="resetCardForm()">Clear</button>
+            </div>
+          </div>
+          <div class="list-panel">
+            <div class="list-header" id="card-list-header">Cards</div>
+            <div class="card-list" id="card-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="statusbar">
+      <span class="status-msg" id="status-msg">Fill in the deck name to get started</span>
+      <span class="toast hidden" id="toast"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+var dotColors=['#378ADD','#BA7517','#1D9E75','#534AB7','#D85A30','#D4537E','#639922'];
+var colorIdx=0;
+function nextColor(){return dotColors[colorIdx++%dotColors.length];}
+
+var decks=[
+  {id:'d1',name:'Vim',desc:'Modal text editor shortcuts',mode:'prompt_first',
+   ns:{mode:['normal','insert','visual','command'],topic:['navigation','editing','buffers','search'],level:['basic','advanced']},
+   color:'#378ADD'},
+  {id:'d2',name:'tmux',desc:'Terminal multiplexer',mode:'prompt_first',ns:{},color:'#BA7517'},
+  {id:'d3',name:'Finder',desc:'macOS file manager',mode:'answer_first',ns:{},color:'#1D9E75'},
+];
+var cards={
+  'd1':[
+    {id:'c1',prompt:'Go to first line',answer:'gg',notes:'Normal mode',tags:['normal','navigation','basic'],source:'manual'},
+    {id:'c2',prompt:'Go to last line',answer:'G',notes:'Normal mode',tags:['normal','navigation','basic'],source:'manual'},
+    {id:'c3',prompt:'Delete to end of line',answer:'D',notes:'Normal mode',tags:['normal','editing','basic'],source:'manual'},
+    {id:'c4',prompt:'Yank current line',answer:'yy',notes:'',tags:['normal','editing'],source:'manual'},
+  ],
+  'd2':[
+    {id:'c5',prompt:'New window',answer:'Ctrl-b c',notes:'',tags:[],source:'manual'},
+    {id:'c6',prompt:'Split horizontally',answer:'Ctrl-b "',notes:'',tags:[],source:'manual'},
+  ],
+  'd3':[
+    {id:'c7',prompt:'New folder',answer:'Shift-Cmd-N',notes:'',tags:[],source:'manual'},
+  ],
+};
+
+var selDeckId=null,editDeckId=null,selCardId=null,editCardId=null,activeDeckId=null;
+var cardTags=[];
+var toastTimer=null;
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function toast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type==='error'?' error':'');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.className='toast hidden';},2800);
+}
+function setStatus(msg){document.getElementById('status-msg').textContent=msg;}
+
+function updateStats(){
+  var nc=Object.values(cards).reduce(function(a,arr){return a+arr.length;},0);
+  document.getElementById('stat-decks').innerHTML='<span>'+decks.length+'</span> deck'+(decks.length===1?'':'s');
+  document.getElementById('stat-cards').innerHTML='<span>'+nc+'</span> shortcut'+(nc===1?'':'s');
+}
+
+function setBc(deckName){
+  if(deckName){
+    document.getElementById('bc-home').className='bc';
+    document.getElementById('bc-sep1').style.display='inline';
+    document.getElementById('bc-deck').style.display='inline';
+    document.getElementById('bc-deck').textContent=deckName;
+    document.getElementById('bc-sep2').style.display='inline';
+    document.getElementById('bc-tail').textContent='Edit cards';
+    document.getElementById('bc-tail').className='bc active';
+  } else {
+    document.getElementById('bc-home').className='bc';
+    document.getElementById('bc-sep1').style.display='none';
+    document.getElementById('bc-deck').style.display='none';
+    document.getElementById('bc-sep2').style.display='none';
+    document.getElementById('bc-tail').textContent='Create deck';
+    document.getElementById('bc-tail').className='bc active';
+  }
+}
+
+/* ── DECK LIST ── */
+function renderDecks(){
+  var el=document.getElementById('deck-list');
+  if(!decks.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-title">No decks yet</div><div class="empty-sub">Fill in the form and click Add deck</div></div>';
+    updateStats();return;
+  }
+  el.innerHTML='';
+  decks.forEach(function(d){
+    var nsKeys=Object.keys(d.ns||{});
+    var nsLabel=nsKeys.length?nsKeys.slice(0,2).join(', ')+(nsKeys.length>2?', …':''):'No namespaces';
+    var modeLabel={prompt_first:'Prompt first',answer_first:'Answer first',both:'Both'}[d.mode]||d.mode;
+    var nc=(cards[d.id]||[]).length;
+    var row=document.createElement('div');
+    row.className='deck-row'+(selDeckId===d.id?' selected':'');
+
+    var top=document.createElement('div');
+    top.className='deck-row-top';
+    top.innerHTML='<span class="de-dot" style="background:'+d.color+'"></span>'
+      +'<div class="deck-row-info">'
+      +'<div class="deck-row-name">'+esc(d.name)+'</div>'
+      +'<div class="deck-row-meta">'+esc(d.desc||'No description')+(nsKeys.length?' · '+esc(nsLabel):'')+'</div>'
+      +'</div>'
+      +'<span class="deck-row-mode">'+esc(modeLabel)+'</span>';
+    top.onclick=function(){selectDeck(d.id);};
+
+    var foot=document.createElement('div');
+    foot.className='deck-row-footer';
+    var editBtn=document.createElement('button');
+    editBtn.className='btn-edit-cards';
+    editBtn.textContent='Edit cards';
+    editBtn.onclick=function(e){e.stopPropagation();openCardEditor(d.id);};
+    var cnt=document.createElement('span');
+    cnt.className='deck-row-count';
+    cnt.textContent=nc+' card'+(nc===1?'':'s');
+    foot.appendChild(editBtn);foot.appendChild(cnt);
+    row.appendChild(top);row.appendChild(foot);
+    el.appendChild(row);
+  });
+  updateStats();
+}
+
+function selectDeck(id){
+  selDeckId=id;editDeckId=id;
+  var d=decks.find(function(x){return x.id===id;});
+  if(!d)return;
+  document.getElementById('d-name').value=d.name;
+  document.getElementById('d-desc').value=d.desc||'';
+  document.getElementById('d-mode').value=d.mode;
+  renderDeckNs(d.ns||{});
+  document.getElementById('d-submit').textContent='Save changes';
+  setStatus('Editing '+d.name+' — update fields then click Save changes');
+  renderDecks();
+}
+
+function addDeckNsRow(name,vals){
+  var ed=document.getElementById('d-ns-editor');
+  var row=document.createElement('div');row.className='ns-row';
+  row.innerHTML='<input type="text" placeholder="name" value="'+(name?esc(name):'')+'" style="width:84px;flex:0 0 84px;"/>'
+    +'<span class="ns-sep">→</span>'
+    +'<input type="text" placeholder="val1, val2, …" value="'+(vals?esc(vals):'')+'" style="flex:1;"/>'
+    +'<button class="ns-remove" onclick="this.parentNode.remove()">×</button>';
+  ed.appendChild(row);
+}
+function renderDeckNs(ns){
+  document.getElementById('d-ns-editor').innerHTML='';
+  Object.entries(ns).forEach(function(e){addDeckNsRow(e[0],e[1].join(', '));});
+}
+function getDeckFormVals(){
+  var name=document.getElementById('d-name').value.trim();
+  var desc=document.getElementById('d-desc').value.trim();
+  var mode=document.getElementById('d-mode').value;
+  var ns={};
+  document.getElementById('d-ns-editor').querySelectorAll('.ns-row').forEach(function(r){
+    var inp=r.querySelectorAll('input');
+    var k=inp[0].value.trim(),v=inp[1].value.trim();
+    if(k)ns[k]=v?v.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
+  });
+  return{name:name,desc:desc,mode:mode,ns:ns};
+}
+function submitDeck(){
+  var v=getDeckFormVals();
+  if(!v.name){toast('Name is required','error');document.getElementById('d-name').focus();return;}
+  if(editDeckId){
+    var d=decks.find(function(x){return x.id===editDeckId;});
+    if(d){d.name=v.name;d.desc=v.desc;d.mode=v.mode;d.ns=v.ns;}
+    toast(v.name+' saved');
+    selDeckId=null;editDeckId=null;
+    resetDeckFormFields();
+    document.getElementById('d-submit').textContent='Add deck';
+    setStatus('Fill in the deck name to get started');
+  } else {
+    if(decks.some(function(x){return x.name.toLowerCase()===v.name.toLowerCase();})){
+      toast('A deck named "'+v.name+'" already exists','error');return;
+    }
+    var newId='d'+Date.now();
+    decks.push({id:newId,name:v.name,desc:v.desc,mode:v.mode,ns:v.ns,color:nextColor()});
+    cards[newId]=[];
+    toast(v.name+' added');
+    resetDeckFormFields();
+    setStatus('Fill in the deck name to get started');
+  }
+  renderDecks();
+}
+function resetDeckForm(){
+  if(editDeckId){editDeckId=null;selDeckId=null;document.getElementById('d-submit').textContent='Add deck';}
+  resetDeckFormFields();
+  setStatus('Fill in the deck name to get started');
+  renderDecks();
+}
+function resetDeckFormFields(){
+  document.getElementById('d-name').value='';
+  document.getElementById('d-desc').value='';
+  document.getElementById('d-mode').value='prompt_first';
+  document.getElementById('d-ns-editor').innerHTML='';
+}
+function deleteDeck(){
+  if(document.getElementById('view-cards').style.display!=='none'){
+    toast('Go back to All decks to delete a deck','error');return;
+  }
+  if(!selDeckId){toast('Select a deck first','error');return;}
+  var d=decks.find(function(x){return x.id===selDeckId;});
+  if(!d)return;
+  if(!confirm('Delete "'+d.name+'" and all its cards? This cannot be undone.'))return;
+  decks=decks.filter(function(x){return x.id!==selDeckId;});
+  delete cards[selDeckId];
+  toast(d.name+' deleted');
+  selDeckId=null;editDeckId=null;
+  resetDeckFormFields();
+  document.getElementById('d-submit').textContent='Add deck';
+  setStatus('Fill in the deck name to get started');
+  renderDecks();
+}
+
+/* ── NAVIGATION ── */
+function goHome(){
+  document.getElementById('view-decks').style.display='flex';
+  document.getElementById('view-cards').style.display='none';
+  activeDeckId=null;selCardId=null;editCardId=null;
+  resetCardFormFields();
+  setBc(null);
+  setStatus('Fill in the deck name to get started');
+  renderDecks();
+}
+
+function openCardEditor(deckId){
+  activeDeckId=deckId;
+  selCardId=null;editCardId=null;
+  resetCardFormFields();
+  var d=decks.find(function(x){return x.id===deckId;});
+  document.getElementById('view-decks').style.display='none';
+  document.getElementById('view-cards').style.display='flex';
+  setBc(d.name);
+
+  /* meta bar */
+  var nsKeys=Object.keys(d.ns||{});
+  var pillsHtml=nsKeys.map(function(k){return '<span class="ns-pill">'+esc(k)+'</span>';}).join('');
+  document.getElementById('deck-meta-bar').innerHTML=
+    '<span class="dmi-back" onclick="goHome()">← Back</span>'
+    +'<span class="dmi-back-sep"></span>'
+    +'<span class="dmi-dot" style="background:'+d.color+'"></span>'
+    +'<span class="dmi-name">'+esc(d.name)+'</span>'
+    +(d.desc?'<span class="dmi-sep">·</span><span class="dmi-desc">'+esc(d.desc)+'</span>':'')
+    +(nsKeys.length?'<div class="dmi-ns">'+pillsHtml+'</div>':'');
+
+  /* namespace-grouped tag hint */
+  renderTagHint(d.ns||{});
+
+  renderCards();
+  var nc=(cards[deckId]||[]).length;
+  setStatus('Editing cards in '+d.name+' · '+nc+' card'+(nc===1?'':'s'));
+}
+
+function renderTagHint(ns){
+  var wrap=document.getElementById('tag-hint-wrap');
+  wrap.innerHTML='';
+  var entries=Object.entries(ns).filter(function(e){return e[1].length>0;});
+  if(!entries.length)return;
+  entries.forEach(function(e){
+    var row=document.createElement('div');
+    row.className='tag-hint-row';
+    row.innerHTML='<b>'+esc(e[0])+':</b> '+esc(e[1].join(', '));
+    wrap.appendChild(row);
+  });
+}
+
+/* ── CARD LIST ── */
+function renderCards(){
+  var el=document.getElementById('card-list');
+  var dc=cards[activeDeckId]||[];
+  document.getElementById('card-list-header').textContent='Cards ('+dc.length+')';
+  if(!dc.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-title">No cards yet</div><div class="empty-sub">Fill in the form and click Add card</div></div>';
+    return;
+  }
+  el.innerHTML='';
+  dc.forEach(function(c){
+    var row=document.createElement('div');
+    row.className='card-row'+(selCardId===c.id?' selected':'');
+    var tagsHtml=c.tags.map(function(t){return '<span class="card-tag">'+esc(t)+'</span>';}).join('');
+    row.innerHTML='<div class="card-row-body">'
+      +'<div class="card-row-prompt">'+esc(c.prompt)+'</div>'
+      +'<div class="card-row-answer">'+esc(c.answer)+'</div>'
+      +(c.tags.length?'<div class="card-row-tags">'+tagsHtml+'</div>':'')
+      +(c.notes?'<div class="card-row-notes">'+esc(c.notes)+'</div>':'')
+      +'</div>';
+    row.onclick=function(){selectCard(c.id);};
+    el.appendChild(row);
+  });
+}
+
+function selectCard(id){
+  selCardId=id;editCardId=id;
+  var dc=cards[activeDeckId]||[];
+  var c=dc.find(function(x){return x.id===id;});
+  if(!c)return;
+  document.getElementById('c-prompt').value=c.prompt;
+  document.getElementById('c-answer').value=c.answer;
+  document.getElementById('c-notes').value=c.notes||'';
+  cardTags=c.tags.slice();
+  renderTagChips();
+  document.getElementById('c-source-badge').textContent=c.source;
+  document.getElementById('c-submit').textContent='Save card';
+  setStatus('Editing "'+c.prompt+'" — update fields then click Save card');
+  renderCards();
+}
+
+/* ── TAG CHIPS ── */
+function renderTagChips(){
+  var wrap=document.getElementById('tag-input-wrap');
+  wrap.querySelectorAll('.tag-chip').forEach(function(el){el.remove();});
+  var inp=document.getElementById('c-tag-input');
+  cardTags.forEach(function(t){
+    var chip=document.createElement('span');chip.className='tag-chip';
+    var lbl=document.createTextNode(t);
+    var rm=document.createElement('button');rm.className='tag-chip-remove';rm.textContent='×';
+    var tCopy=t;
+    rm.onclick=function(e){e.stopPropagation();cardTags=cardTags.filter(function(x){return x!==tCopy;});renderTagChips();};
+    chip.appendChild(lbl);chip.appendChild(rm);
+    wrap.insertBefore(chip,inp);
+  });
+}
+document.getElementById('c-tag-input').addEventListener('keydown',function(e){
+  if((e.key==='Enter'||e.key===','||e.key===' ')&&this.value.trim()){
+    e.preventDefault();
+    var t=this.value.replace(/,/g,'').trim();
+    if(t&&!cardTags.includes(t)){cardTags.push(t);renderTagChips();}
+    this.value='';
+  }
+  if(e.key==='Backspace'&&!this.value&&cardTags.length){
+    cardTags.pop();renderTagChips();
+  }
+});
+
+/* ── CARD FORM ── */
+function submitCard(){
+  var prompt=document.getElementById('c-prompt').value.trim();
+  var answer=document.getElementById('c-answer').value.trim();
+  var notes=document.getElementById('c-notes').value.trim();
+  if(!prompt){toast('Prompt is required','error');document.getElementById('c-prompt').focus();return;}
+  if(!answer){toast('Answer is required','error');document.getElementById('c-answer').focus();return;}
+  var dc=cards[activeDeckId]||(cards[activeDeckId]=[]);
+  if(editCardId){
+    var c=dc.find(function(x){return x.id===editCardId;});
+    if(c){c.prompt=prompt;c.answer=answer;c.notes=notes;c.tags=cardTags.slice();}
+    toast('"'+prompt+'" saved');
+    selCardId=null;editCardId=null;
+    document.getElementById('c-submit').textContent='Add card';
+    resetCardFormFields();
+    var d=decks.find(function(x){return x.id===activeDeckId;});
+    setStatus('Editing cards in '+d.name);
+  } else {
+    dc.push({id:'c'+Date.now(),prompt:prompt,answer:answer,notes:notes,tags:cardTags.slice(),source:'manual'});
+    toast('"'+prompt+'" added');
+    resetCardFormFields();
+    var d2=decks.find(function(x){return x.id===activeDeckId;});
+    setStatus('Editing cards in '+d2.name+' · '+dc.length+' card'+(dc.length===1?'':'s'));
+  }
+  renderCards();updateStats();
+}
+function resetCardForm(){
+  if(editCardId){editCardId=null;selCardId=null;document.getElementById('c-submit').textContent='Add card';}
+  resetCardFormFields();
+  renderCards();
+  var d=decks.find(function(x){return x.id===activeDeckId;});
+  if(d)setStatus('Editing cards in '+d.name);
+}
+function resetCardFormFields(){
+  document.getElementById('c-prompt').value='';
+  document.getElementById('c-answer').value='';
+  document.getElementById('c-notes').value='';
+  cardTags=[];renderTagChips();
+  document.getElementById('c-source-badge').textContent='manual';
+  document.getElementById('c-submit').textContent='Add card';
+}
+
+document.getElementById('bc-home').onclick=goHome;
+renderDecks();
+</script>
+</body>
+</html>
