@@ -1,6 +1,6 @@
 # shortcutdeck
 
-`shortcutdeck` is a desktop-first, keyboard-first flashcard tool for learning keyboard shortcuts.
+`shortcutdeck` is a desktop-first, keyboard-first flashcard tool for learning keyboard shortcuts. (Although the entire tool code and documentatation talks about shortcuts, it is a generic flashcards tool that was created for remembering shortcuts :-)
 
 It runs as a single local Go binary with an embedded web UI. Your data stays on your machine in a SQLite database. There is no account system, cloud sync, or external service dependency.
 
