@@ -211,5 +211,10 @@ make release
 Artifacts are written to `dist/` with these names:
 
 - `dist/shortcutdeck-linux-amd64`
+
+## Acknowledgements
+
+This project was developed with substantial assistance from Claude.ai for design and OpenAI Codex for implementation, refactoring, testing support, and documentation drafting. Final product and release decisions were reviewed and curated by the repository owner.
+
 - `dist/shortcutdeck-darwin-amd64`
 - `dist/shortcutdeck-windows-amd64.exe`
